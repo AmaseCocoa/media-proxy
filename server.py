@@ -11,7 +11,9 @@ async def fetch_image(session, url):
     async with session.get(url) as response:
         if response.status != 200:
             return None
-        return await response.read()
+        else:
+            content_type = response.headers.get('Content-Type', '').lower()
+            return await response.read(), content_type
 
 async def proxy_image(request):
     query_params = request.rel_url.query
@@ -32,7 +34,7 @@ async def proxy_image(request):
         return web.Response(status=400, text="Invalid 'url' parameter")
 
     async with aiohttp.ClientSession() as session:
-        image_data = await fetch_image(session, url)
+        image_data, content_type = await fetch_image(session, url)
         
         if image_data is None:
             if fallback:
@@ -45,6 +47,14 @@ async def proxy_image(request):
                 async with aiofiles.open("./assets/fallback.webp", "rb") as f:
                     return web.Response(status=200, body=await f.read(), headers=headers)
             return web.Response(status=404, text="Image not found")
+        if 'image' not in content_type:
+            headers = {
+                'Cache-Control': 'max-age=31536000, immutable',
+                'Content-Type': content_type,
+                'Content-Security-Policy': "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'",
+                'Content-Disposition': 'inline; filename=image.webp'
+            }
+            return web.Response(status=200, body=image_data, headers=headers)
 
         image = Image.open(io.BytesIO(image_data))
 
@@ -79,4 +89,4 @@ app = web.Application()
 app.router.add_get('/proxy/{filename}', proxy_image)
 
 if __name__ == '__main__':
-    web.run_app(app, port=os.environ.get('PORT', 3003), host=os.environ.get('HOST', "0.0.0.0"))
+    web.run_app(app, port=os.environ.get('PORT', 3004), host=os.environ.get('HOST', "0.0.0.0"))

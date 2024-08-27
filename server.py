@@ -23,7 +23,7 @@ async def fetch_image(session: aiohttp.ClientSession, url):
             content_type = response.headers.get("Content-Type", "").lower()
             data = bytearray()
             while True:
-                chunk = await response.content.read(os.environ.get("CHUNK_SIZE", 1048576))
+                chunk = await response.content.read(int(os.environ.get("CHUNK_SIZE", 1048576)))
                 if not chunk:
                     break
                 data.extend(chunk)

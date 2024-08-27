@@ -129,5 +129,5 @@ app.router.add_get("/proxy/{filename}", proxy_image)
 
 if __name__ == "__main__":
     web.run_app(
-        app, port=os.environ.get("PORT", 3004), host=os.environ.get("HOST", "0.0.0.0")
+        app, port=os.environ.get("PORT", 3003), host=os.environ.get("HOST", "0.0.0.0")
     )

@@ -1,0 +1,19 @@
+[project]
+name = "media-proxy"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "]", email = "amase.cocoa@gmail.com"},
+]
+dependencies = [
+    "pillow>=10.4.0",
+    "aiohttp>=3.10.5",
+    "aiofiles>=24.1.0",
+]
+requires-python = "==3.12.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false

@@ -126,6 +126,7 @@ async def proxy_image(request):
 app = web.Application()
 setup_cache(app)
 app.router.add_get("/proxy/{filename}", proxy_image)
+app.router.add_get("/", proxy_image)
 app.router.add_get("/{filename}", proxy_image)
 
 if __name__ == "__main__":

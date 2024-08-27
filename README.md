@@ -49,13 +49,15 @@ python server.py
 Use environment variables to configure settings.
 
 - `PORT`: The port number the server listens on (default: 3003)
-- `EXPIRES`: The length of time to cache media (default: 3600)
+- `EXPIRES`: The length of time to cache media (default: 86400 (seconds))
+- `CHUNK_SIZE`: The chunk size of the file to be read at a time. (default: 1048576 (bytes))
 
 Example:
 
 ```sh
 export PORT=8000
-export EXPIRES=7200
+export EXPIRES=86400
+export CHUNK_SIZE=5242880
 ```
 
 ### Example

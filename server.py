@@ -3,6 +3,10 @@ import os
 import aiofiles
 import aiohttp
 import aiohttp.web as web
+from aiohttp_cache import (
+    setup_cache,
+    cache,
+)
 from PIL import Image
 import io
 import urllib.parse
@@ -15,6 +19,7 @@ async def fetch_image(session, url):
             content_type = response.headers.get('Content-Type', '').lower()
             return await response.read(), content_type
 
+@cache(expires=os.environ.get('EXPIRES', 3600))
 async def proxy_image(request):
     query_params = request.rel_url.query
     url = query_params.get('url')
@@ -86,7 +91,8 @@ async def proxy_image(request):
         return web.Response(body=output.read(), headers=headers)
 
 app = web.Application()
+setup_cache(app)
 app.router.add_get('/proxy/{filename}', proxy_image)
 
 if __name__ == '__main__':
-    web.run_app(app, port=os.environ.get('PORT', 3004), host=os.environ.get('HOST', "0.0.0.0"))
+    web.run_app(app, port=os.environ.get('PORT', 3003), host=os.environ.get('HOST', "0.0.0.0"))

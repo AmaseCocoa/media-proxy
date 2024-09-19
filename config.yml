@@ -1,0 +1,22 @@
+processor: libvips # libvips, opencv, pillow (libvipsはメモリ使用量が比較的少ない画像処理ライブラリです。Pillowは大きい画像を処理できないため非推奨です。)この設定は現在のリリースでは無視されます。
+process_gif: false # libvipsは正常にgifを処理できないため、有効の場合はgifの処理にopencvを利用します。この設定は現在のリリースでは無視されます。
+process_heif: false # libheifが入っていないlibvipsの場合は無効にすることを推奨しています (無効の場合は画像がそのままプロキシされます)
+
+# プロキシサーバーの設定
+proxy:
+  use: false
+  require_auth: false
+  type: http # http or https or sock5
+  host: localhost
+  port: 8080
+  auth: user:password
+
+hide_proxy_version: true
+
+disguise: # Serverヘッダーを偽装します
+  enable: false
+  value: nginx
+
+dns:
+  external: false
+  servers: ["1.1.1.1", "1.0.0.1"]

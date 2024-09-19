@@ -6,10 +6,13 @@ authors = [
     {name = "]", email = "amase.cocoa@gmail.com"},
 ]
 dependencies = [
-    "pillow>=10.4.0",
     "aiohttp>=3.10.5",
     "aiofiles>=24.1.0",
     "aiohttp-cache>=4.0.1",
+    "redis[hiredis]>=4.6.0",
+    "aiosonic>=0.21.0",
+    "pyvips>=2.2.3",
+    "aiodns>=3.2.0",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"
@@ -18,3 +21,6 @@ license = {text = "MIT"}
 
 [tool.pdm]
 distribution = false
+
+# docker build -t amasecocoa/media-proxy:0.2.2 -t amasecocoa/media-proxy:latest -t amasecocoa/media-proxy:0.0.0 .
+# docker run -d --name media-proxy -p 3003:3003 -e CHUNK_SIZE=5242880 amasecocoa/media-proxy:0.2.2

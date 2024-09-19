@@ -10,7 +10,6 @@ Media-Proxy is a lightweight media proxy for Misskey servers. It is approximatel
 
 ## Install
 ### Install from Source 
-
 1. Clone the repository.
 ```sh
 git clone https://github.com/AmaseCocoa/media-proxy.git
@@ -26,7 +25,7 @@ pip install -r requirements.txt
 
 1. Pull the Docker image.
 ```sh
-docker pull amasecocoa/media-proxy
+docker pull amasecocoa/media-proxy:latest
 ```
 
 2. Start the container.
@@ -35,8 +34,6 @@ docker run -d --name media-proxy -p 3003:3003 -e PORT=3030 amasecocoa/media-prox
 ```
 
 ## How To Use
-libvips must be installed in advance.
-
 ### Start Server
 
 Start the server with the following command.

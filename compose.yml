@@ -1,0 +1,15 @@
+services:
+  server:
+    image: amasecocoa/media-proxy:latest
+    environment:
+      - PORT=3003
+      - EXPIRES=86400
+    ports:
+      - 3003:3003
+    volumes:
+      - ./config.yml:/mediaproxy/config.yml
+    restart: always
+
+networks:
+  external_network:
+    external: true

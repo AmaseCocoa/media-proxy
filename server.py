@@ -9,9 +9,11 @@ import urllib.parse
 import aiofiles
 import aiosonic
 import pyvips
+import yaml
+from aiohttp import web
 from aiohttp.web import Application, Response, run_app
 from aiohttp_cache import cache, setup_cache
-from aiosonic import HTTPClient
+from aiosonic import HTTPClient, Proxy
 from aiosonic.exceptions import HttpParsingError
 from aiosonic.resolver import AsyncResolver
 
@@ -34,6 +36,28 @@ EXPIRES = int(os.environ.get("EXPIRES", 86400)) * 1000
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", 3003))
 version = "0.1.0"
+
+with open("./config.yml", "r") as f:
+    config = yaml.safe_load(f)
+    if config["disguise"]["enable"]:
+        server = config["disguise"]["value"]
+    else:
+        if config["hide_proxy_version"]:
+            server = "media-proxy-py"
+        else:
+            server = f"media-proxy-py/{version}"
+
+async def middleware(app, handler):
+    async def middleware_handler(request):
+        try:
+            response = await handler(request)
+        except web.HTTPException as exc:
+            raise exc
+        if not response.prepared:
+            response.headers["Server"] = server
+        return response
+
+    return middleware_handler
 
 
 async def fetch_image(client: HTTPClient, url: str):
@@ -93,6 +117,7 @@ def split_image(image, rows, cols):
 
     return tiles
 
+
 @cache(expires=EXPIRES)
 async def proxy_image(request):
     query_params = request.rel_url.query
@@ -115,23 +140,36 @@ async def proxy_image(request):
         return Response(status=400, text="Invalid 'url' parameter")
 
     try:
-        resolver = AsyncResolver(nameservers=["1.1.1.1", "1.0.0.1"])
-        connector = aiosonic.TCPConnector(resolver=resolver)
-        async with HTTPClient(connector=connector) as client:
+        if config["dns"]["external"]:
+            resolver = AsyncResolver(nameservers=config["dns"]["servers"])
+            connector = aiosonic.TCPConnector(resolver=resolver)
+        else:
+            connector = None
+        if config["proxy"]["use"]:
+            proxy = Proxy(host=f"{config["proxy"]["type"]}://{config["proxy"]["host"]}{f":{config["proxy"]["port"]}" if config["proxy"]["port"] != "" else ""}", auth=config["proxy"]["auth"] if config["proxy"]["auth"] != "" else None)
+        else:
+            proxy = None
+        async with HTTPClient(connector=connector, proxy=proxy) as client:
             image_data, content_type = await fetch_image(client, url)
-
             if image_data is None:
                 if fallback:
                     return await fallback_response()
                 return Response(status=404, text="Image not found")
 
-            if content_type == "image/gif" or image_data.startswith(b'GIF'):
+            is_heif = image_data.startswith(b'\x00\x00\x00\x18ftypheic') or image_data.startswith(b'\x00\x00\x00\x1cftypheic')
+
+            if not config["process_heif"]:
+                if content_type in ["image/avif", "image/heif"] or image_data.startswith(b"\x00\x00\x00 ftypavif") or image_data.startswith(b"\x00\x00\x00 ftypheic"):
+                    return Response(body=image_data, content_type=content_type)
+            elif content_type == "image/gif" or image_data.startswith(b"GIF"):
                 return Response(body=image_data, content_type="image/gif")
 
             if "image" not in content_type:
                 return non_image_response(image_data, content_type)
 
-            image = pyvips.Image.new_from_buffer(image_data, "", access="sequential", n=-1)
+            image = pyvips.Image.new_from_buffer(
+                image_data, "", access="sequential", n=-1
+            )
             images = process_image(
                 image, emoji, avatar, preview, badge, split_rows, split_cols
             )
@@ -145,11 +183,13 @@ async def proxy_image(request):
                 headers = create_headers(image_format, img_output.getvalue())
                 return Response(body=img_output.read(), headers=headers)
 
-    except Exception:
+    except Exception as e:
+        if e.__class__ == pyvips.error.Error:
+            return Response(body=image_data, content_type=content_type)
         print(f"Error processing image: {traceback.format_exc()}")
         if fallback:
             return await fallback_response()
-        return Response(status=404, text="Internal Server Error")
+        return Response(status=500, text="Internal Server Error")
 
 
 def save_image(image: pyvips.Image, output, image_format):
@@ -191,6 +231,7 @@ def non_image_response(image_data, content_type):
 
 app = Application()
 setup_cache(app)
+app.middlewares.append(middleware)
 app.router.add_get("/proxy/{filename}", proxy_image)
 app.router.add_get("/", proxy_image)
 app.router.add_get("/{filename}", proxy_image)

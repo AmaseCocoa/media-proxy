@@ -14,6 +14,7 @@ dependencies = [
     "pyvips>=2.2.3",
     "aiodns>=3.2.0",
     "pkgconfig>=1.5.5",
+    "pyyaml>=6.0.2",
 ]
 requires-python = "==3.12.*"
 readme = "README.md"
@@ -23,5 +24,5 @@ license = {text = "MIT"}
 [tool.pdm]
 distribution = false
 
-# docker build -t amasecocoa/media-proxy:0.3.0 -t amasecocoa/media-proxy:latest -t amasecocoa/media-proxy:0.0.0 .
-# docker run -d --name media-proxy -p 3003:3003 -e CHUNK_SIZE=5242880 amasecocoa/media-proxy:0.2.2
+# docker build -t amasecocoa/media-proxy:0.3.1 -t amasecocoa/media-proxy:latest -t amasecocoa/media-proxy:0.0.0 .
+# docker run -d --name media-proxy -p 3003:3003 amasecocoa/media-proxy:latest

@@ -31,10 +31,11 @@ docker pull amasecocoa/media-proxy
 
 2. Start the container.
 ```sh
-docker run -d --name media-proxy -p 3003:3003 -e PORT=3030amasecocoa/media-proxy
+docker run -d --name media-proxy -p 3003:3003 -e PORT=3030 amasecocoa/media-proxy:latest
 ```
 
 ## How To Use
+libvips must be installed in advance.
 
 ### Start Server
 
@@ -50,14 +51,13 @@ Use environment variables to configure settings.
 
 - `PORT`: The port number the server listens on (default: 3003)
 - `EXPIRES`: The length of time to cache media (default: 86400 (seconds))
-- `CHUNK_SIZE`: The chunk size of the file to be read at a time. (default: 1048576 (bytes))
+~~`CHUNK_SIZE`: The chunk size of the file to be read at a time. (default: 1048576 (bytes))~~ Discontinued in 0.3.0
 
 Example:
 
 ```sh
 export PORT=8000
 export EXPIRES=86400
-export CHUNK_SIZE=5242880
 ```
 
 ### Example

@@ -32,7 +32,7 @@ logger.setLevel(logging.DEBUG)
 CHUNK_SIZE = int(os.environ.get("CHUNK_SIZE", 5242880))
 EXPIRES = int(os.environ.get("EXPIRES", 86400)) * 1000
 HOST = os.environ.get("HOST", "0.0.0.0")
-PORT = 3004
+PORT = int(os.environ.get("PORT", 3003))
 version = "0.1.0"
 
 
@@ -47,15 +47,15 @@ async def fetch_image(client: HTTPClient, url: str):
         )
         if response.status_code != 200:
             return None, None
+        content = await response.content()
         content_type = response.headers.get("Content-Type", "").lower()
-        return await response.content(), content_type
-    except HttpParsingError as e:
+        return content, content_type
+    except HttpParsingError:
         print(traceback.format_exc())
         return None, None
 
 
 def process_image(image, emoji, avatar, preview, badge, split_rows=1, split_cols=1):
-    # 画像を縮小してメモリ使用量を抑える
     max_size = 2048
     if image.width > max_size or image.height > max_size:
         scale = min(max_size / image.width, max_size / image.height)
@@ -93,7 +93,6 @@ def split_image(image, rows, cols):
 
     return tiles
 
-
 @cache(expires=EXPIRES)
 async def proxy_image(request):
     query_params = request.rel_url.query
@@ -124,21 +123,21 @@ async def proxy_image(request):
             if image_data is None:
                 if fallback:
                     return await fallback_response()
-                print("No Image")
                 return Response(status=404, text="Image not found")
+
+            if content_type == "image/gif" or image_data.startswith(b'GIF'):
+                return Response(body=image_data, content_type="image/gif")
 
             if "image" not in content_type:
                 return non_image_response(image_data, content_type)
 
-            image = pyvips.Image.new_from_buffer(image_data, "", access="sequential")
+            image = pyvips.Image.new_from_buffer(image_data, "", access="sequential", n=-1)
             images = process_image(
                 image, emoji, avatar, preview, badge, split_rows, split_cols
             )
 
             output = io.BytesIO()
             image_format = "webp" if not badge else "png"
-
-            # 複数の画像を保存する場合
             for i, img in enumerate(images):
                 img_output = io.BytesIO()
                 save_image(img, img_output, image_format)
@@ -146,14 +145,14 @@ async def proxy_image(request):
                 headers = create_headers(image_format, img_output.getvalue())
                 return Response(body=img_output.read(), headers=headers)
 
-    except Exception as e:
+    except Exception:
         print(f"Error processing image: {traceback.format_exc()}")
         if fallback:
             return await fallback_response()
         return Response(status=404, text="Internal Server Error")
 
 
-def save_image(image, output, image_format):
+def save_image(image: pyvips.Image, output, image_format):
     buffer = image.write_to_buffer(
         f".{image_format}", Q=80 if image_format == "webp" else None
     )
